@@ -29,10 +29,13 @@ _CASES = [
     ("python", _PY, "        lock.acquire()\n{exit}", "lock_in_loop"),
     ("python", _PY, "        y = x in big\n{exit}", "membership_test_against_list_in_loop"),
     ("go", _GO, "\t\thttp.Get(x)\n{exit}", "io_in_loop"),
+    ("go", _GO, '\t\tx += "row"\n{exit}', "string_concat_in_loop"),
+    ("go", _GO, "\t\tdefer http.Get(x)\n{exit}", "defer_in_loop"),
     ("typescript", _TS, "    const y = JSON.parse(JSON.stringify(x));\n{exit}", "json_parse_in_loop"),
     ("typescript", _TS, "    await fetch(x);\n{exit}", "io_in_loop"),
     ("typescript", _TS, "    await fetch(x);\n{exit}", "serial_await_in_loop"),
     ("java", _JAVA, '    Pattern.compile("a+");\n{exit}', "regex_compile_in_loop"),
+    ("java", _JAVA, '    x += "line";\n{exit}', "string_concat_in_loop"),
 ]
 
 _EXITS = {
