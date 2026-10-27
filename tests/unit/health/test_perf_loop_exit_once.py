@@ -28,6 +28,7 @@ _CASES = [
     ("python", _PY, "        requests.get(x)\n{exit}", "io_in_loop"),
     ("python", _PY, "        lock.acquire()\n{exit}", "lock_in_loop"),
     ("python", _PY, "        y = x in big\n{exit}", "membership_test_against_list_in_loop"),
+    ("python", _PY, '        s += "row"\n{exit}', "string_concat_in_loop"),
     ("go", _GO, "\t\thttp.Get(x)\n{exit}", "io_in_loop"),
     ("go", _GO, '\t\tx += "row"\n{exit}', "string_concat_in_loop"),
     ("go", _GO, "\t\tdefer http.Get(x)\n{exit}", "defer_in_loop"),
@@ -151,6 +152,18 @@ def test_return_inside_try_still_ends_the_loop():
         "            requests.get(x)\n            return\n        except ValueError:\n            pass\n"
     )
     assert "io_in_loop" not in _kinds("python", src)
+
+
+@pytest.mark.parametrize(
+    "exit_src,recorded",
+    [("        return\n", False), ("        if ok:\n            return\n", True)],
+    ids=["exit", "conditional-exit"],
+)
+def test_helper_call_before_an_exit_is_no_loop_target(exit_src, recorded):
+    src = _PY.format(body="        helper(x)\n" + exit_src)
+    fc = walk_file("t.py", "python", src.encode())
+    targets = {name for f in fc.perf_fn_facts for name, _line in f.loop_call_targets}
+    assert ("helper" in targets) is recorded
 
 
 @pytest.mark.parametrize(
