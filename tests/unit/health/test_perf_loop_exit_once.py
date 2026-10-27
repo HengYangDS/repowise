@@ -151,3 +151,17 @@ def test_return_inside_try_still_ends_the_loop():
         "            requests.get(x)\n            return\n        except ValueError:\n            pass\n"
     )
     assert "io_in_loop" not in _kinds("python", src)
+
+
+@pytest.mark.parametrize(
+    "exit_src,recorded",
+    [("        return\n", False), ("        if ok:\n            return\n", True)],
+    ids=["exit", "conditional-exit"],
+)
+def test_inner_loop_before_an_exit_records_no_nested_loop(exit_src, recorded):
+    src = (
+        "def f(xs, ok):\n    for x in xs:\n        for y in xs:\n"
+        "            if x == y:\n                print(x)\n" + exit_src
+    )
+    fc = walk_file("t.py", "python", src.encode())
+    assert any(f.nested_loop_line for f in fc.perf_fn_facts) is recorded
