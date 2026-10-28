@@ -93,6 +93,7 @@ def regenerate_deterministic_pages(
     prior_page_ids: dict | None = None,
     full_scope: bool = False,
     stats_out: dict[str, int] | None = None,
+    embed_during_generation: bool = True,
 ) -> list:
     """Re-render the template pages for *regenerate_paths*. Never raises.
 
@@ -121,6 +122,7 @@ def regenerate_deterministic_pages(
         degrade_label="Template page refresh",
         full_scope=full_scope,
         stats_out=stats_out,
+        embed_during_generation=embed_during_generation,
     )
 
 
@@ -190,6 +192,7 @@ def _render_pages(
     only_page_ids: set[str] | None = None,
     vector_store: Any = None,
     stats_out: dict[str, int] | None = None,
+    embed_during_generation: bool = True,
 ) -> list:
     """Render the changed files' pages from structure (free, no LLM).
 
@@ -199,6 +202,10 @@ def _render_pages(
     ``stats_out["embed_failed_pages"]`` accumulates the pages whose vectors
     failed to land, so the caller can fail the run instead of reporting a
     healthy semantic index.
+
+    A configuration-driven rebuild embeds the finalized pages at persistence.
+    It disables generation-time embedding to avoid embedding the same pages
+    twice while retaining the post-generation links in the final vectors.
     """
     from repowise.core.generation import ContextAssembler, GenerationConfig, PageGenerator
     from repowise.core.providers.llm.template import TemplateProvider
@@ -238,7 +245,9 @@ def _render_pages(
         # path, which is the one place in this command that avoids it.
         resolved_vector_store = vector_store
         embedder_name = deterministic_embedder_name(cfg)
-        if resolved_vector_store is None and embedder_name != "mock":
+        if not embed_during_generation:
+            resolved_vector_store = None
+        elif resolved_vector_store is None and embedder_name != "mock":
             from repowise.cli.providers import build_embedder, build_vector_store
 
             try:

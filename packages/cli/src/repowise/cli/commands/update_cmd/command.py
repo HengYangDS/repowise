@@ -1626,6 +1626,7 @@ def _render_template_page_set(
         regenerate_deterministic_pages,
     )
 
+    assert run.config is not None
     pages = regenerate_deterministic_pages(
         repo_path=run.repo_path,
         parsed_files=run.parsed_files,
@@ -1641,6 +1642,9 @@ def _render_template_page_set(
         prior_page_ids=prior_ids,
         full_scope=full_scope,
         stats_out=out.render_stats,
+        # Config persistence embeds the finalized pages and treats failure as
+        # fatal before stamping its fingerprint. Do not embed them twice.
+        embed_during_generation=not run.config.generation_changed,
     )
     if run.stale_deterministic_ids and not full_scope:
         pages.extend(
