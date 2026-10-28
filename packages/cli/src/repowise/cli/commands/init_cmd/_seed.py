@@ -118,6 +118,7 @@ def delegate_to_seeded_update(opts: InitOptions, repo_path: Path, scan: Any) -> 
         dry_run=opts.dry_run,
     )
     if not seeded:
+        console.print("[yellow]Falling back to full init.[/yellow]")
         return False
     if opts.dry_run:
         console.print("[dim]Dry run: Would seed worktree index and delegate to update.[/dim]")
