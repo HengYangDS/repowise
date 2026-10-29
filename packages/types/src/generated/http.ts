@@ -3876,6 +3876,28 @@ export interface ReposSummaryResponse {
   repos: RepoSummaryRow[];
 }
 
+export interface RetiredPageDetail {
+  archive_id: string;
+  page_id: string;
+  repository_id: string;
+  retired_at: string;
+  reason: string;
+  superseded_by: string | null;
+  title: string;
+  page: Record<string, unknown>;
+  versions: Record<string, unknown>[];
+}
+
+export interface RetiredPageSummary {
+  archive_id: string;
+  page_id: string;
+  repository_id: string;
+  retired_at: string;
+  reason: string;
+  superseded_by: string | null;
+  title: string;
+}
+
 export interface ReviewerEntry {
   email: string;
   files: number;

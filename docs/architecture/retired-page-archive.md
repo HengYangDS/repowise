@@ -34,6 +34,14 @@ column and all versions. The existing always-run retired-page sweep purges only
 that repository's events strictly older than 90 days, including their versions.
 Additive `init_db` reconciliation and Alembic revision `0121` create the schema.
 
+Alembic downgrade removes these tables; it is not a data-recovery operation.
+Before downgrading a populated store, preserve a complete database through
+SQLite's native backup protocol (or the deployment's database backup owner).
+Restore that snapshot before reopening the archive-capable reader. Native
+recovery tests compare the complete populated database and read back its prose,
+human notes and every version after restoration; an empty-schema rollback does
+not establish that guarantee.
+
 See [CLI reference](../reference/CLI_REFERENCE.md#repowise-pages-retired) and
 [API response contracts](../reference/API_REFERENCE.md). Restoring a retirement
 as live and an archive GUI are outside this change.
