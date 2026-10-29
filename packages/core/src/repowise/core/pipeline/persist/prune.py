@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any
 
@@ -19,20 +19,21 @@ logger = structlog.get_logger("repowise.core.pipeline.persist")
 _PRUNE_CHUNK = 500
 
 
-async def delete_pages(session: Any, repo_id: str, page_ids: list[str]) -> None:
-    """Delete wiki pages and their version history, chunked.
+async def delete_pages(
+    session: Any,
+    repo_id: str,
+    page_ids: list[str],
+    reason: str = "retired",
+    successors: Mapping[str, str] | None = None,
+) -> None:
+    """Retire live wiki identities without erasing their complete records.
 
-    Versions go first: FK enforcement requires it, and a deleted page id never
-    comes back to claim its history.
+    All persistence sweeps share this boundary. The archive owner captures
+    records and transfers notes before removing live rows in this transaction.
     """
-    from sqlalchemy import delete
+    from repowise.core.persistence.crud.page_archive import retire_pages
 
-    from repowise.core.persistence.models import Page, PageVersion
-
-    for i in range(0, len(page_ids), _PRUNE_CHUNK):
-        batch = page_ids[i : i + _PRUNE_CHUNK]
-        await session.execute(delete(PageVersion).where(PageVersion.page_id.in_(batch)))
-        await session.execute(delete(Page).where(Page.repository_id == repo_id, Page.id.in_(batch)))
+    await retire_pages(session, repo_id, page_ids, reason, successors)
 
 
 async def _prune_stale_file_rows(

@@ -436,7 +436,7 @@ async def sweep_expired_tombstones(
         )
     )
     expired = [pid for pid, meta, updated in rows if _is_expired(meta, updated, cutoff)]
-    await delete_pages(session, repo_id, expired)
+    await delete_pages(session, repo_id, expired, "expired_tombstone")
     if expired:
         logger.info("expired_tombstones_swept", repo_id=repo_id, count=len(expired))
     return expired

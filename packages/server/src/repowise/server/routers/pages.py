@@ -7,6 +7,8 @@ parameter greedily matches the suffix as part of the page_id.
 
 from __future__ import annotations
 
+from urllib.parse import quote
+
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from pydantic import BaseModel
@@ -195,6 +197,8 @@ async def get_page_by_query(
     carries ``X-Repowise-Redirected-From``.
     """
     page = await _get_page_or_successor(session, page_id, response)
+    if page is None:
+        await _raise_retired_miss(session, page_id, repo_id)
     if page is None or _outside_scope(request, page.repository_id):
         raise HTTPException(status_code=404, detail="Page not found")
     return PageResponse.from_orm(page)
@@ -203,6 +207,26 @@ async def get_page_by_query(
 def _outside_scope(request: Request, repository_id: str) -> bool:
     scoped = scoped_repo_id(request)
     return scoped is not None and repository_id != scoped
+
+
+async def _raise_retired_miss(session: AsyncSession, page_id: str, repo_id: str | None) -> None:
+    """An exact repository-bound old link names its archive instead of a mute 404."""
+    if repo_id is None:
+        return
+    archived = await crud.get_retired_page(session, repo_id, page_id)
+    if archived is None:
+        return
+    raise HTTPException(
+        status_code=410,
+        detail={
+            "status": "retired",
+            "page_id": page_id,
+            "reason": archived.reason,
+            "superseded_by": archived.superseded_by,
+            "archive_id": archived.id,
+            "archive_url": f"/api/repos/{repo_id}/pages/retired/{quote(page_id, safe='')}?archive_id={archived.id}",
+        },
+    )
 
 
 @router.get("/lookup/versions", response_model=list[PageVersionResponse])
@@ -314,6 +338,7 @@ async def regenerate_page_by_query(
 async def get_page(
     page_id: str,
     response: Response,
+    repo_id: str | None = Query(None, description="Repository owning a retired page identity"),
     session: AsyncSession = Depends(get_db_session),
 ) -> PageResponse:
     """Get a single wiki page by ID in path (e.g. ``file_page:src/main.py``).
@@ -325,5 +350,6 @@ async def get_page(
     """
     page = await _get_page_or_successor(session, page_id, response)
     if page is None:
+        await _raise_retired_miss(session, page_id, repo_id)
         raise HTTPException(status_code=404, detail="Page not found")
     return PageResponse.from_orm(page)

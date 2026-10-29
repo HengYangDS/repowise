@@ -26,7 +26,7 @@ Grouped by task; `PATH` and flags are in each command's section.
 - **Querying:** [`search`](#repowise-search-query-path), [`ask`](#repowise-ask-question),
   [`context`](#repowise-context-targets), [`symbol`](#repowise-symbol-symbol_id), [`why`](#repowise-why-query), [shared
   `ask`/`context`/`symbol`/`why` options](#shared-options-ask-context-symbol-why), [`status`](#repowise-status-path),
-  [`next`](#repowise-next-path)
+  [`next`](#repowise-next-path), [`pages retired`](#repowise-pages-retired)
 - **Health and risk:** [`health`](#repowise-health-path), [`health check`](#repowise-health-check-revspec),
   [`risk`](#repowise-risk-revspec), [`overlap`](#repowise-overlap), [`dead-code`](#repowise-dead-code-path),
   [`doc-drift`](#repowise-doc-drift-path), [`security`](#repowise-security), [`check`](#repowise-check-revspec), [`ci-summary`](#repowise-ci-summary-dir),
@@ -617,6 +617,34 @@ repowise next --horizon quarter --all
 - Same stored actions as the web overview and MCP `get_overview` (`next_actions`).
 - Groups **Now**, **Worth planning**, **Improve what Repowise can see**; rows give impact, facts, done-when, and any command.
 - An index predating a store names it and suggests `repowise update`. Under five commits, history-ranked rows are dropped and JSON sets `context.history_too_short`.
+
+---
+
+### `repowise pages retired`
+
+List retired page identities, or read one complete captured body and its version
+history. Retired records are separate from ordinary search and live page queries.
+
+```bash
+repowise pages retired --path . --json
+repowise pages retired --path . --page-id 'module_page:src/old' --json
+```
+
+| Flag | What it does | Default |
+|------|--------------|---------|
+| `--path` | Exact repository-local or configured store to read. | current directory |
+| `--page-id` | Read complete retired prose, notes and all versions. | list identities |
+| `--archive-id` | Select a specific retirement when an old identity was reused; requires `--page-id`. | latest retirement |
+| `--limit` | Maximum identities to list, from 1 to 5,000. | 100 |
+| `--offset` | Nonnegative listing offset. | 0 |
+| `--json` | Machine-readable retirement metadata or complete detail. | human-readable |
+
+Each retirement names its reason and any live same-repository successor. Notes
+carry over to a regrouping successor with origin attribution, without overwriting
+the successor's own notes. A reused live page ID starts fresh; its old history
+belongs to the distinct archive identity. Archives older than 90 days are purged
+by the existing retired-page sweep. Reading does not restore a page as live or
+create a missing index; the normal native reader may reconcile an older schema.
 
 ---
 

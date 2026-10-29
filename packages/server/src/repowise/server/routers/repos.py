@@ -49,6 +49,7 @@ from repowise.server.routers._repo_pricing import (
 )
 from repowise.server.routers._repo_settings import repo_response, save_settings, stored_settings
 from repowise.server.routers._repo_summary import _freshness_for, _summary_rows_for
+from repowise.server.routers.page_archive import router as page_archive_router
 from repowise.server.schemas import (
     JobAcceptedResponse,
     RepoCreate,
@@ -67,6 +68,7 @@ router = APIRouter(
     tags=["repos"],
     dependencies=[Depends(verify_api_key)],
 )
+router.include_router(page_archive_router)
 
 
 async def _get_repo_or_404(session: AsyncSession, repo_id: str) -> Repository:
